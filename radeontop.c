@@ -30,10 +30,11 @@ static void version() {
 
 static void help(const char * const me, const unsigned int ticks, const unsigned int dumpinterval) {
 	printf(_("\n\tRadeonTop for R600 and above.\n\n"
-		"\tUsage: %s [-chmv] [-b bus] [-d file] [-i seconds] [-l limit] [-p device] [-t ticks]\n\n"
+		"\tUsage: %s [-chmv] [-b bus] [-d file] [-F file] [-i seconds] [-l limit] [-p device] [-t ticks]\n\n"
 		"-b --bus 3		Pick card from this PCI bus (hexadecimal)\n"
 		"-c --color		Enable colors\n"
 		"-d --dump file		Dump data to this file, - for stdout\n"
+		"-F --dump-file file	Write GPU load percentage to file (overwrites file)\n"
 		"-i --dump-interval 1	Number of seconds between dumps (default %u)\n"
 		"-l --limit 3		Quit after dumping N lines, default forever\n"
 		"-m --mem		Force the /dev/mem path, for the proprietary driver\n"
@@ -62,6 +63,7 @@ int main(int argc, char **argv) {
 	unsigned int device_id = 0;
 	unsigned int limit = 0;
 	char *dump = NULL;
+	char *dump_file = NULL;
 	unsigned int dumpinterval = default_dumpinterval;
 	const char *path = NULL;
 
@@ -77,6 +79,7 @@ int main(int argc, char **argv) {
 		{"bus", 1, 0, 'b'},
 		{"color", 0, 0, 'c'},
 		{"dump", 1, 0, 'd'},
+		{"dump-file", 1, 0, 'F'},
 		{"dump-interval", 1, 0, 'i'},
 		{"help", 0, 0, 'h'},
 		{"limit", 1, 0, 'l'},
@@ -89,7 +92,7 @@ int main(int argc, char **argv) {
 	};
 
 	while (1) {
-		int c = getopt_long(argc, argv, "b:cTd:hi:l:mp:t:v", opts, NULL);
+		int c = getopt_long(argc, argv, "b:cTd:F:hi:l:mp:t:v", opts, NULL);
 		if (c == -1) break;
 
 		switch(c) {
@@ -121,6 +124,9 @@ int main(int argc, char **argv) {
 			case 'd':
 				dump = optarg;
 			break;
+			case 'F':
+				dump_file = optarg;
+			break;
 			case 'i':
 				dumpinterval = atoi(optarg);
 				if (dumpinterval < 1)
@@ -150,7 +156,9 @@ int main(int argc, char **argv) {
 	// runtime
 	collect(ticks, dumpinterval);
 
-	if (dump)
+	if (dump_file)
+		dump_gpu_load(ticks, dump_file, bus, dumpinterval);
+	else if (dump)
 		dumpdata(ticks, dump, limit, bus, dumpinterval);
 	else
 		present(ticks, cardname, color,transparency, bus, dumpinterval);

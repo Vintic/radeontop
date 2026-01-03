@@ -73,6 +73,7 @@ void present(const unsigned int ticks, const char card[], unsigned int color, un
 
 // dump.c
 void dumpdata(const unsigned int ticks, const char file[], const unsigned int limit, const unsigned char bus, const unsigned int dumpinterval);
+void dump_gpu_load(const unsigned int ticks, const char file[], const unsigned char bus, const unsigned int dumpinterval);
 
 // chips
 enum radeon_family {

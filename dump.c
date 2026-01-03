@@ -163,3 +163,57 @@ void dumpdata(const unsigned int ticks, const char file[], const unsigned int li
 		fclose(f);
 	}
 }
+
+void dump_gpu_load(const unsigned int ticks, const char file[], const unsigned char bus, const unsigned int dumpinterval) {
+
+#ifdef ENABLE_NLS
+	// This is a data format, so disable decimal point localization
+	setlocale(LC_NUMERIC, "C");
+#endif
+
+	// Set up signals to exit gracefully when terminated
+	struct sigaction sig;
+
+	sig.sa_handler = sighandler;
+
+	sigaction(SIGTERM, &sig, NULL);
+	sigaction(SIGINT, &sig, NULL);
+
+	printf(_("Writing GPU load percentage to %s\n"), file);
+
+	// Check the file can be output to
+	FILE *f = fopen(file, "w");
+
+	if (!f)
+		die(_("Can't open file for writing."));
+
+	// This does not need to be atomic. A delay here is acceptable.
+	while(!results)
+		usleep(16000);
+
+	// Action
+	while (!quit) {
+		// Calculate GPU load percentage
+		float k = 1.0f / ticks / dumpinterval;
+		float gpu_load = 100 * results->gui * k;
+		
+		// Convert to integer percentage
+		int load_percentage = (int)(gpu_load + 0.5f);
+		
+		// Write to file with overwrite
+		fseek(f, 0, SEEK_SET);
+		fprintf(f, "%d", load_percentage);
+		fflush(f);
+		
+		// Did we get a termination signal?
+		if (quit)
+			break;
+		
+		// Sleep for the dump interval
+		sleep(dumpinterval);
+	}
+
+	// Clean up - delete the file on exit
+	fclose(f);
+	remove(file);
+}
